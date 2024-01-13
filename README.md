@@ -1,3 +1,6 @@
+
+![DALL·E 2024-01-13 20 04 06 - Design a logo for a software tool named 'NADOO Launchpad'  The logo should be modern and tech-savvy, reflecting themes of innovation, efficiency, and ](https://github.com/NADOOITChristophBa/NADOO-Launchpad/assets/106314951/6f90e7ca-37dd-4e51-bc9d-534a8bddb5f8)
+
 # NADOO Launchpad – The Gateway to Seamless Cross-Platform Development
 
 ## Unlock Your Development Potential with NADOO Launchpad!
