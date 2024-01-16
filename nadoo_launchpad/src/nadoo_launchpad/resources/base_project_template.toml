@@ -1,0 +1,136 @@
+# base_project_template.toml
+
+[tool.briefcase]
+project_name = "{{PROJECT_NAME}}"
+bundle = "{{BUNDLE_IDENTIFIER}}"
+version = "0.0.1"
+url = "{{URL}}"
+license = "{{LICENSE}}"
+author = "{{AUTHOR_NAME}}"
+author_email = "{{AUTHOR_EMAIL}}"
+
+[tool.briefcase.app.{{APP_NAME}}]
+formal_name = "{{FORMAL_NAME}}"
+description = "{{DESCRIPTION}}"
+long_description = """{{LONG_DESCRIPTION}}"""
+icon = "src/{{APP_NAME}}/resources/{{APP_NAME}}"
+sources = [
+    "src/{{APP_NAME}}",
+]
+test_sources = [
+    "tests",
+]
+requires = [
+    # Add common dependencies here
+]
+test_requires = [
+    "pytest",
+]
+
+[tool.briefcase.app.{{APP_NAME}}.macOS]
+universal_build = true
+requires = [
+    "toga-cocoa~=0.4.0",
+    "std-nslog~=1.0.0",
+    # Add macOS-specific dependencies here
+]
+
+[tool.briefcase.app.{{APP_NAME}}.linux]
+requires = [
+    "toga-gtk~=0.4.0",
+    # Add Linux-specific dependencies here
+]
+
+[tool.briefcase.app.{{APP_NAME}}.linux.system.debian]
+system_requires = [
+    "libcairo2-dev",
+    "libgirepository1.0-dev",
+]
+system_runtime_requires = [
+    "gir1.2-gtk-3.0",
+    "libgirepository-1.0-1",
+    "libcanberra-gtk3-module",
+    # "gir1.2-webkit2-4.0",
+]
+
+[tool.briefcase.app.{{APP_NAME}}.linux.system.rhel]
+system_requires = [
+    "cairo-gobject-devel",
+    "gobject-introspection-devel",
+]
+system_runtime_requires = [
+    "gobject-introspection",
+    "gtk3",
+    "libcanberra-gtk3",
+    # "webkit2gtk3",
+]
+
+[tool.briefcase.app.{{APP_NAME}}.linux.system.suse]
+system_requires = [
+    "cairo-devel",
+    "gobject-introspection-devel",
+]
+system_runtime_requires = [
+    "gtk3",
+    "gobject-introspection", "typelib(Gtk)=3.0",
+    "libcanberra-gtk3-0",
+    # "libwebkit2gtk3", "typelib(WebKit2)",
+]
+
+[tool.briefcase.app.{{APP_NAME}}.linux.system.arch]
+system_requires = [
+    "cairo",
+    "gobject-introspection",
+    "gtk3",
+    "libcanberra",
+    # "webkit2gtk",
+]
+system_runtime_requires = [
+    "gtk3",
+    "gobject-introspection-runtime",
+    "libcanberra",
+    # "webkit2gtk",
+]
+
+[tool.briefcase.app.{{APP_NAME}}.linux.appimage]
+manylinux = "manylinux2014"
+system_requires = [
+    "cairo-gobject-devel",
+    "gobject-introspection-devel",
+    "gtk3-devel",
+    "libcanberra-gtk3",
+    "PackageKit-gtk3-module",
+    "gvfs-client",
+]
+linuxdeploy_plugins = [
+"DEPLOY_GTK_VERSION=3 gtk",
+]
+
+[tool.briefcase.app.{{APP_NAME}}.linux.flatpak]
+flatpak_runtime = "org.gnome.Platform"
+flatpak_runtime_version = "44"
+flatpak_sdk = "org.gnome.Sdk"
+
+[tool.briefcase.app.{{APP_NAME}}.windows]
+requires = [
+"toga-winforms~=0.4.0",
+]
+
+Mobile deployments
+[tool.briefcase.app.{{APP_NAME}}.iOS]
+requires = [
+"toga-iOS~=0.4.0",
+"std-nslog~=1.0.0",
+]
+
+[tool.briefcase.app.{{APP_NAME}}.android]
+requires = [
+"toga-android~=0.4.0",
+]
+
+Web deployments
+[tool.briefcase.app.{{APP_NAME}}.web]
+requires = [
+"toga-web~=0.4.0",
+]
+style_framework = "Shoelace v2.3"
