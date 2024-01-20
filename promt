@@ -1,0 +1,5 @@
+here is the file strucure.
+
+As you can see I have started to integrate Django. I am currently only intrested to for now get the ORM working. As you can see I put the settings and manage .py files in the same level as the app.py instance for briefcase.
+
+I would like you to work through this step by step. Take very small steps so that I do not miss anything. First think about what to do. Then give me a list of the files of which you want the content to do the next step. I will try to alway give you how things have changed. That way you see what I do. After you gave an step by step expliation of what we will do I want you to create a checklist with explinations of what to do
