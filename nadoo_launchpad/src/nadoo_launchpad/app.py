@@ -11,12 +11,26 @@ import subprocess
 import os
 import sys
 import toml
-
 import toga
 from toga.style import Pack
 from toga.style.pack import COLUMN, ROW
 from toga.widgets.button import OnPressHandler
 from toga.sources import ListSource
+
+
+def get_project_folder_path():
+    home_dir = os.path.expanduser("~")
+    project_folder = os.path.join(home_dir, "Documents", "GitHub")
+
+    # Create the folder if it doesn't exist
+    if not os.path.exists(project_folder):
+        os.makedirs(project_folder)
+
+    return project_folder
+
+
+def get_resource_path():
+    pass
 
 
 class cancel_pres(OnPressHandler):
@@ -42,6 +56,7 @@ class ErrorComponent(toga.Box):
         self.app.clipboard.set(self.error_message)
 
 
+# TODO add setting the secret key on first startup. This can be a random string. Simply use UUID4 to create it
 class InstallationComponent(toga.Box):
     def __init__(self, app):
         super().__init__(style=Pack(direction=COLUMN, padding=5))
@@ -122,12 +137,7 @@ class InstallationComponent(toga.Box):
 
     def setup_project_folder(self):
         # Get the current user's home directory and set the project folder path
-        home_dir = os.path.expanduser("~")
-        project_folder = os.path.join(home_dir, "Documents", "GitHub")
-
-        # Create the folder if it doesn't exist
-        if not os.path.exists(project_folder):
-            os.makedirs(project_folder)
+        project_folder = get_project_folder_path()
         return project_folder
 
 
@@ -174,10 +184,15 @@ class ProjectInfoComponent(toga.Box):
 
         # Text input fields
         self.project_name_input = toga.TextInput(
-            placeholder="Project Name", value="NADOO Launchpad"
+            placeholder="Project Name",
+            value="NADOO Launchpad",
+            on_change=self.update_project_url,
         )
+
         self.bundle_input = toga.TextInput(
-            placeholder="Bundle Identifier", value="de.nadooit"
+            placeholder="Bundle Identifier",
+            value="de.nadooit",
+            on_change=self.update_project_url,
         )
         self.author_input = toga.TextInput(
             placeholder="Author",
@@ -202,14 +217,42 @@ class ProjectInfoComponent(toga.Box):
         self.add(self.description_input)
 
         # Selections
-        self.license_label = toga.Label(
-            "License: Proprietary (click to change)", style=Pack(padding=(5, 0))
+        # Dropdown for selecting the license
+        licenses = [
+            "BSD license",
+            "MIT license",
+            "Apache Software License",
+            "GNU General Public License v2 (GPLv2)",
+            "GNU General Public License v2 or later (GPLv2+)",
+            "GNU General Public License v3 (GPLv3)",
+            "GNU General Public License v3 or later (GPLv3+)",
+            "Proprietary",
+            "Other",
+        ]
+        self.license_dropdown = toga.Selection(
+            items=licenses, style=Pack(padding=(5, 0))
         )
-        self.gui_framework_label = toga.Label(
-            "GUI Framework: Toga (click to change)", style=Pack(padding=(5, 0))
+        self.license_dropdown.value = "Proprietary"  # Set default value
+
+        # Adding license dropdown to the component
+        self.add(self.license_dropdown)
+
+        # Dropdown for selecting the GUI framework
+        gui_frameworks = [
+            "Toga",
+            "PySide2 (does not support iOS/Android deployment)",
+            "PySide6 (does not support iOS/Android deployment)",
+            "PursuedPyBear (does not support iOS/Android deployment)",
+            "Pygame (does not support iOS/Android deployment)",
+            "None",
+        ]
+        self.gui_framework_dropdown = toga.Selection(
+            items=gui_frameworks, style=Pack(padding=(5, 0))
         )
-        self.add(self.license_label)
-        self.add(self.gui_framework_label)
+        self.gui_framework_dropdown.value = "Toga"  # Set default value
+
+        # Adding GUI framework dropdown to the component
+        self.add(self.gui_framework_dropdown)
 
         # Buttons
         cancel_btn = toga.Button("Cancel", on_press=self.app.cancel_action)
@@ -218,6 +261,14 @@ class ProjectInfoComponent(toga.Box):
             children=[cancel_btn, add_project_btn], style=Pack(direction=ROW, padding=5)
         )
         self.add(button_box)
+
+    def update_project_url(self, widget):
+        # Split the bundle input by '.', reverse it, and join back with '.'
+        bundle_reversed = ".".join(self.bundle_input.value.split(".")[::-1])
+        # Replace spaces with underscores in the project name
+        project_name_underscored = self.project_name_input.value.replace(" ", "_")
+        # Combine the reversed bundle and the underscored project name
+        self.url_input.value = f"http://{bundle_reversed}/{project_name_underscored}"
 
     def create_and_activate_venv(self):
         os_type = platform.system()
@@ -232,7 +283,7 @@ class ProjectInfoComponent(toga.Box):
             subprocess.check_output(["pyenv", "which", "python"]).decode().strip()
         )
         # Create the virtual environment inside the project folder
-        venv_path = os.path.join(self.project_folder, "env")
+        venv_path = os.path.join(get_project_folder_path(), "env")
         subprocess.run([python_path, "-m", "venv", venv_path])
         # Activate the virtual environment - for macOS
         activate_command = f"source {venv_path}/bin/activate"
@@ -242,17 +293,12 @@ class ProjectInfoComponent(toga.Box):
 
     def add_new_project(self, widget):
         # Step 1: Create a project folder
-
-        project_name = self.project_info_component.project_name_input.value.replace(
-            " ", "-"
-        )
-        project_folder = os.path.join(self.project_folder, project_name)
+        project_name = self.project_name_input.value.replace(" ", "-")
+        project_folder = os.path.join(get_project_folder_path(), project_name)
         os.makedirs(project_folder, exist_ok=True)
 
         # Step 2: Create and activate a virtual environment
-        developer_name = self.project_info_component.author_input.value.replace(
-            " ", "_"
-        )
+        developer_name = self.author_input.value.replace(" ", "_")
 
         venv_path = self.create_and_activate_venv()
 
@@ -264,18 +310,23 @@ class ProjectInfoComponent(toga.Box):
         # (Assuming create_pyproject_file is a method to generate the pyproject.toml file)
 
         user_data = {
-            "project_name": self.project_info_component.project_name_input.value,
-            "bundle_identifier": self.project_info_component.bundle_input.value,
-            "author_name": self.project_info_component.author_input.value,
-            "author_email": self.project_info_component.author_email_input.value,
-            "project_url": self.project_info_component.url_input.value,
-            "project_description": self.project_info_component.description_input.value,
-            # Assuming you have a way to retrieve the selected license and GUI framework
-            "license": self.project_info_component.selected_license,
-            "gui_framework": self.project_info_component.selected_gui_framework,
-            # Include other necessary data from the form...
+            "project_name": self.project_name_input.value,
+            "app_name": self.project_name_input.value.lower().replace(
+                " ", "_"
+            ),  # Assuming app_name is a lowercase, underscored version of project_name
+            "formal_name": self.project_name_input.value,  # Assuming formal_name is the same as project_name
+            "bundle_identifier": self.bundle_input.value,
+            "author_name": self.author_input.value,
+            "author_email": self.author_email_input.value,
+            "url": self.url_input.value,
+            "description": self.description_input.value,
+            "long_description": self.description_input.value,  # Assuming long_description is the same as description
+            "license": self.license_dropdown.value,
+            "gui_framework": self.gui_framework_dropdown.value,
+            "version": "0.0.1",  # Assuming version is a static value
         }
-        self.create_pyproject_file(user_data, project_folder)
+
+        project_template = self.create_pyproject_file(user_data, project_folder)
 
         # Step 5: Use Briefcase to create a new project
         briefcase_path = os.path.join(venv_path, "bin", "briefcase")
@@ -302,6 +353,42 @@ class ProjectInfoComponent(toga.Box):
                 # Predefined developer selected
                 self.author_input.value = selected_developer_name
                 self.author_email_input.value = selected_developer_email
+
+    def create_pyproject_file(self, user_data, project_folder):
+        # Construct the path to the template file
+        template_file_name = "base_project_template.toml"
+        template_path = Path(self.app.paths.app / "resources" / template_file_name)
+
+        # Ensure the project subfolder exists
+        project_subfolder = Path(project_folder, user_data["app_name"])
+        project_subfolder.mkdir(parents=True, exist_ok=True)
+
+        # New project file path
+        new_project_path = project_subfolder / "pyproject.toml"
+
+        try:
+            with open(template_path, "r") as template_file:
+                template_content = template_file.read()
+
+            # Replace placeholders with actual data
+            for key, value in user_data.items():
+                placeholder = "{{" + key.upper() + "}}"
+                template_content = template_content.replace(placeholder, value)
+
+            print(template_content)
+
+            # Write the new pyproject.toml file
+            with open(new_project_path, "w") as new_project_file:
+                new_project_file.write(template_content)
+
+            return new_project_file
+
+        except FileNotFoundError as e:
+            self.display_error(f"Template file not found: {e}")
+        except IOError as e:
+            self.display_error(f"Error while handling the file: {e}")
+        except Exception as e:
+            self.display_error(f"An unexpected error occurred: {e}")
 
 
 class EmptyComponent(toga.Box):
@@ -360,44 +447,10 @@ class NADOOLaunchpad(toga.App):
             for element in block:
                 self.main_window.content.add(element)
 
-    def create_pyproject_file(self, user_data):
-        # Construct the path to the template file
-        template_file_name = "base_project_template.toml"
-        template_path = Path(
-            self.main_window.app.resource_path, "resources", template_file_name
-        )
-
-        # Ensure the project subfolder exists
-        project_subfolder = Path(self.project_folder, user_data["app_name"])
-        project_subfolder.mkdir(parents=True, exist_ok=True)
-
-        # New project file path
-        new_project_path = project_subfolder / "pyproject.toml"
-
-        try:
-            with open(template_path, "r") as template_file:
-                template_content = template_file.read()
-
-            # Replace placeholders with actual data
-            for key, value in user_data.items():
-                placeholder = "{{" + key.upper() + "}}"
-                template_content = template_content.replace(placeholder, value)
-
-            # Write the new pyproject.toml file
-            with open(new_project_path, "w") as new_project_file:
-                new_project_file.write(template_content)
-
-        except FileNotFoundError as e:
-            self.display_error(f"Template file not found: {e}")
-        except IOError as e:
-            self.display_error(f"Error while handling the file: {e}")
-        except Exception as e:
-            self.display_error(f"An unexpected error occurred: {e}")
-
-        def display_error(self, error_message):
-            # Switch to the error component with the provided message
-            error_component = ErrorComponent(self, error_message)
-            self.main_window.content = error_component
+    def display_error(self, error_message):
+        # Switch to the error component with the provided message
+        error_component = ErrorComponent(self.app, error_message)
+        self.app.main_window.content = error_component
 
 
 def main():

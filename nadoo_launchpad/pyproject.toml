@@ -22,6 +22,10 @@ test_sources = [
 ]
 
 requires = [
+    "python-dotenv",
+    "toml",
+    "django",
+    
 ]
 test_requires = [
     "pytest",
