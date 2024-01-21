@@ -16,6 +16,12 @@ from toga.style import Pack
 from toga.style.pack import COLUMN, ROW
 from toga.widgets.button import OnPressHandler
 from toga.sources import ListSource
+from packaging.version import Version
+import briefcase
+import cookiecutter
+from briefcase.exceptions import TemplateUnsupportedVersion
+
+cookiecutter = staticmethod(cookiecutter)
 
 
 def get_project_folder_path():
@@ -309,29 +315,102 @@ class ProjectInfoComponent(toga.Box):
         # Step 4: Create a project template from the entered data
         # (Assuming create_pyproject_file is a method to generate the pyproject.toml file)
 
-        user_data = {
+        # The class name can be completely derived from the formal name.
+        from briefcase.config import make_class_name, is_valid_app_name
+
+        formal_name = self.project_name_input.value
+        class_name = make_class_name(formal_name)
+
+        from .utils import make_app_name, make_module_name
+
+        # Check if the app name is valid
+        app_name = make_app_name(formal_name)
+        if not is_valid_app_name(app_name):
+            # If not valid, display the error using display_error
+            error_message = (
+                f"'{app_name}' is not a valid app name. Please choose a different name."
+            )
+            self.app.display_error(error_message)
+            return
+
+        # The module name can be completely derived from the app name.
+        module_name = make_module_name(app_name)
+
+        context = {
+            "formal_name": formal_name,  # Assuming formal_name is the same as project_name
+            "app_name": app_name,  # Assuming app_name is a lowercase, underscored version of project_name
+            "class_name": class_name,
+            "module_name": module_name,
             "project_name": self.project_name_input.value,
-            "app_name": self.project_name_input.value.lower().replace(
-                " ", "_"
-            ),  # Assuming app_name is a lowercase, underscored version of project_name
-            "formal_name": self.project_name_input.value,  # Assuming formal_name is the same as project_name
-            "bundle_identifier": self.bundle_input.value,
-            "author_name": self.author_input.value,
-            "author_email": self.author_email_input.value,
-            "url": self.url_input.value,
             "description": self.description_input.value,
-            "long_description": self.description_input.value,  # Assuming long_description is the same as description
+            "author": self.author_input.value,
+            "author_email": self.author_email_input.value,
+            "bundle": self.bundle_input.value,
+            "url": self.url_input.value,
             "license": self.license_dropdown.value,
             "gui_framework": self.gui_framework_dropdown.value,
-            "version": "0.0.1",  # Assuming version is a static value
         }
+        # If a branch wasn't supplied through the --template-branch argument,
+        # use the branch derived from the Briefcase version
+        version = Version(briefcase.__version__)
 
-        project_template = self.create_pyproject_file(user_data, project_folder)
+        branch = f"v{version.base_version}"
+        project_folder_path = get_project_folder_path()
+        # Construct the path to the new app's directory
+        new_app_path = project_folder_path / context["app_name"]
+
+        # Make extra sure we won't clobber an existing application.
+        if new_app_path.exists():
+            self.app.display_error(
+                f"A directory named '{context['app_name']}' already exists."
+            )
+
+        # Additional context for the Briefcase template pyproject.toml header to
+        # include the version of Briefcase as well as the source of the template.
+        context.update(
+            {
+                "template_source": template,
+                "template_branch": branch,
+                "briefcase_version": briefcase.__version__,
+            }
+        )
+        # project_template = self.create_pyproject_file(user_data, project_folder)
 
         # Step 5: Use Briefcase to create a new project
-        briefcase_path = os.path.join(venv_path, "bin", "briefcase")
-        briefcase_command = [briefcase_path, "new", "--template", project_folder]
-        subprocess.run(briefcase_command, cwd=project_folder)
+
+        template = "git@github.com:NADOOIT/batteries-included-briefcase-template.git"
+
+        # briefcase_path = os.path.join(venv_path, "bin", "briefcase")
+        # briefcase_command = [briefcase_path, "new", "--template", template]
+        # subprocess.run(briefcase_command, cwd=project_folder)
+
+        from .utils import generate_template
+
+        try:
+            # Unroll the new app template
+            generate_template(
+                template=template,
+                branch=branch,
+                output_path=get_project_folder_path(),
+                extra_context=context,
+            )
+        except TemplateUnsupportedVersion:
+            # If we're *not* on a development branch, raise an error about
+            # the missing template branch.
+            if version.dev is None:
+                raise
+
+            # Development branches can use the main template.
+            self.logger.info(
+                f"Template branch {branch} not found; falling back to development template"
+            )
+            branch = "main"
+            generate_template(
+                template=template,
+                branch=branch,
+                output_path=get_project_folder_path(),
+                extra_context=context,
+            )
 
     def on_new_developer_name_entered(self, widget):
         # Generate the email based on the entered name
@@ -449,8 +528,11 @@ class NADOOLaunchpad(toga.App):
 
     def display_error(self, error_message):
         # Switch to the error component with the provided message
-        error_component = ErrorComponent(self.app, error_message)
-        self.app.main_window.content = error_component
+        error_component = ErrorComponent(
+            app=self.app,
+            error_message=error_message,
+        )
+        self.app.main_window.content.add(error_component)
 
 
 def main():

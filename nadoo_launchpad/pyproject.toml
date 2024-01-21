@@ -25,6 +25,8 @@ requires = [
     "python-dotenv",
     "toml",
     "django",
+    "briefcase",
+    "cookiecutter",
     
 ]
 test_requires = [
