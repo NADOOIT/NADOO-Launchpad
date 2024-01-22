@@ -4,13 +4,14 @@ import subprocess
 from briefcase.exceptions import (
     InvalidTemplateRepository,
     NetworkFailure,
-    TemplateUnsupportedVersion,   
+    TemplateUnsupportedVersion,
     BriefcaseCommandError,
 )
 from cookiecutter import exceptions as cookiecutter_exceptions
 from cookiecutter.main import cookiecutter
 from cookiecutter.repository import is_repo_url
 from pathlib import Path
+
 
 def make_app_name(formal_name):
     """Construct a candidate app name from a formal name.
@@ -37,7 +38,7 @@ def make_module_name(app_name):
     return app_name.replace("-", "_")
 
 
-def generate_template(self, template, branch, output_path, extra_context):
+def generate_template(template, branch, output_path, extra_context):
     """Ensure the named template is up-to-date for the given branch, and roll out
     that template.
 
@@ -71,6 +72,7 @@ def generate_template(self, template, branch, output_path, extra_context):
         # Branch does not exist.
         raise TemplateUnsupportedVersion(branch) from e
 
+
 def update_cookiecutter_cache(template: str, branch="master"):
     """Ensure that we have a current checkout of a template path.
 
@@ -98,7 +100,7 @@ def update_cookiecutter_cache(template: str, branch="master"):
         try:
             repo = self.tools.git.Repo(cached_template)
             # Raises ValueError if "origin" isn't a valid remote
-            remote = repo.remote(name="origin")
+            remote = repo.remote(name="main")
             try:
                 # Attempt to update the repository
                 remote.fetch()
@@ -107,20 +109,7 @@ def update_cookiecutter_cache(template: str, branch="master"):
                 # the origin git repo. It's OK to continue; but
                 # capture the error in the log and warn the user
                 # that the template may be stale.
-                self.logger.debug(str(e))
-                self.logger.warning(
-                    """
-*************************************************************************
-** WARNING: Unable to update template                                  **
-*************************************************************************
 
-Briefcase is unable the update the application template. This
-may be because your computer is currently offline. Briefcase will
-use existing template without updating.
-
-*************************************************************************
-"""
-                )
 
             try:
                 # Check out the branch for the required version tag.

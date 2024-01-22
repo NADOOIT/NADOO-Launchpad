@@ -355,15 +355,27 @@ class ProjectInfoComponent(toga.Box):
         version = Version(briefcase.__version__)
 
         branch = f"v{version.base_version}"
-        project_folder_path = get_project_folder_path()
+
+        # Get the project folder path as a Path object
+        project_folder_path = Path(get_project_folder_path())
+
+        # Ensure context["app_name"] is a string
+        app_name = str(context["app_name"])
+
         # Construct the path to the new app's directory
-        new_app_path = project_folder_path / context["app_name"]
+        new_app_path = project_folder_path / app_name
 
         # Make extra sure we won't clobber an existing application.
         if new_app_path.exists():
             self.app.display_error(
                 f"A directory named '{context['app_name']}' already exists."
             )
+
+        # project_template = self.create_pyproject_file(user_data, project_folder)
+
+        # Step 5: Use Briefcase to create a new project
+
+        template = "git@github.com:NADOOIT/batteries-included-briefcase-template.git"
 
         # Additional context for the Briefcase template pyproject.toml header to
         # include the version of Briefcase as well as the source of the template.
@@ -374,11 +386,6 @@ class ProjectInfoComponent(toga.Box):
                 "briefcase_version": briefcase.__version__,
             }
         )
-        # project_template = self.create_pyproject_file(user_data, project_folder)
-
-        # Step 5: Use Briefcase to create a new project
-
-        template = "git@github.com:NADOOIT/batteries-included-briefcase-template.git"
 
         # briefcase_path = os.path.join(venv_path, "bin", "briefcase")
         # briefcase_command = [briefcase_path, "new", "--template", template]
