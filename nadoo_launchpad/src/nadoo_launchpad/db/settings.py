@@ -4,7 +4,7 @@ import django
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 ENV_FILE = Path(__file__).resolve() / ".env"
 
 # Load the .env file into the environment. This is done before the settings are loaded.
